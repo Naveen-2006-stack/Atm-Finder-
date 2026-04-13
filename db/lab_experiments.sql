@@ -561,6 +561,38 @@ DELIMITER ;
 
 
 -- ============================================================================
+-- WEEK 7: CONCURRENCY CONTROL & LOCKS
+-- ============================================================================
+
+-- ============================================================================
+-- 7.1: Concurrency Control using SELECT ... FOR UPDATE
+-- Objective: Demonstrate a row-level lock when two transactions try to update ATM status simultaneously to prevent race conditions.
+-- ============================================================================
+
+-- Transaction A: Admin 1 locks an ATM row to update its status
+START TRANSACTION;
+
+-- Lock the specific ATM row for update so no other transaction can modify it simultaneously (Pessimistic Locking)
+SELECT ATMId, StatusID, BankID 
+FROM ATM 
+WHERE ATMId = 1 
+FOR UPDATE;
+
+-- Perform the status update
+UPDATE ATM 
+SET StatusID = (SELECT StatusID FROM STATUS_LOOKUP WHERE StatusDescription = 'Working')
+WHERE ATMId = 1;
+
+-- Note: If Transaction B runs concurrently in another session, e.g.:
+-- START TRANSACTION; 
+-- UPDATE ATM SET StatusID = 2 WHERE ATMId = 1; 
+-- It would be forced to wait here until Transaction A commits or rolls back.
+
+-- Release the lock and commit changes
+COMMIT;
+
+
+-- ============================================================================
 -- SAMPLE TEST QUERIES - Verify All Lab Implementations
 -- ============================================================================
 
@@ -580,6 +612,40 @@ SHOW FULL TABLES WHERE Table_type LIKE 'VIEW';
 SELECT ROUTINE_NAME, ROUTINE_TYPE 
 FROM INFORMATION_SCHEMA.ROUTINES 
 WHERE ROUTINE_SCHEMA = 'ATM_MoneyChecker';
+
+-- ============================================================================
+-- WEEK 8: DATABASE NORMALIZATION (1NF to 5NF)
+-- ============================================================================
+-- The schema architecture (in schema.sql) is fully normalized up to 5NF:
+-- 
+-- * 1NF (First Normal Form - Atomic Values):
+--   All attributes contain single, atomic values. Pincode, Latitude, Longitude,
+--   etc. No arrays or lists exist under a single attribute.
+--
+-- * 2NF (Second Normal Form - Partial Dependencies):
+--   The schema meets 1NF, and all non-key attributes are fully dependent on the 
+--   primary key. In ATM_SERVICES, composite dependencies (Deposit and Printers) 
+--   rely completely on the combined keys of ATMId and ServiceName.
+--
+-- * 3NF (Third Normal Form - Transitive Dependencies):
+--   There are no transitive dependencies. Status descriptions are not stored 
+--   directly in the ATM table. They are abstracted out via a foreign key linkage 
+--   (StatusID) into the STATUS_LOOKUP table to prevent update anomalies.
+--
+-- * BCNF (Boyce-Codd Normal Form - Strict Dependencies):
+--   For every functional dependency X -> Y within the tables, X is a strict 
+--   mathematical superkey.
+--
+-- * 4NF (Fourth Normal Form - Multi-valued Dependencies):
+--   No table contains two or more independent, multi-valued attributes tracking 
+--   the same entity. By separating REPORT and ATM_SERVICES, we prevent infinite 
+--   data duplication and empty columns.
+--
+-- * 5NF (Fifth Normal Form - Join Dependency):
+--   The schema handles join dependencies successfully. The tables (USER, ATM, 
+--   REPORT) can be decomposed without data loss and mathematically reconstructed 
+--   through natural joins without creating spurious or false tuples.
+-- ============================================================================
 
 -- ============================================================================
 -- END OF LAB EXPERIMENTS SCRIPT

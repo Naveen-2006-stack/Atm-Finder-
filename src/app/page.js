@@ -55,7 +55,7 @@ function MainContent() {
 
   async function loadProfile() {
     try {
-      const response = await fetch("/api/user/me");
+      const response = await fetch("/api/user/me", { cache: "no-store" });
       const data = await response.json();
 
       if (!response.ok) {
@@ -73,7 +73,7 @@ function MainContent() {
 
     async function loadProfileOnce() {
       try {
-        const response = await fetch("/api/user/me");
+        const response = await fetch("/api/user/me", { cache: "no-store" });
         const data = await response.json();
 
         if (!response.ok) {
